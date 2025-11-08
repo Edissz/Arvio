@@ -1,0 +1,26 @@
+{
+  "moderation": {
+    "modRoleIds": [
+      "1435722596665786399"
+    ],
+    "adminRoleIds": [
+      "1435722596665786399",
+      "1435722629993463829"
+    ],
+    "logsChannelId": "1353426215381237837",
+    "settings": {
+      "dmsEnabled": true,
+      "logStyle": "compact",
+      "theme": "neutral",
+      "bannerUrl": "https://cdn.discordapp.com/attachments/1435646523584024697/1435687691219107983/Blue_White_Gradient_Modern_Professional_Business_General_LinkedIn_Banner_3.png?ex=690cdfdb&is=690b8e5b&hm=f4730e62195977f96e716e638a1dc516e35deafbec0518303114455b563fd632"
+    },
+    "dmTemplates": {
+      "warn": "You have been **warned** in {server}. Reason: {reason}",
+      "timeout": "You have been **timed out** in {server} for {duration}. Reason: {reason}",
+      "softban": "You have been **soft-banned** in {server}. Reason: {reason}",
+      "ban": "You have been **banned** in {server}. Reason: {reason}",
+      "kick": "You have been **kicked** from {server}. Reason: {reason}"
+    },
+    "bannerUrl": "https://cdn.discordapp.com/attachments/1435646523584024697/1435687691219107983/Blue_White_Gradient_Modern_Professional_Business_General_LinkedIn_Banner_3.png?ex=690cdfdb&is=690b8e5b&hm=f4730e62195977f96e716e638a1dc516e35deafbec0518303114455b563fd632"
+  }
+}

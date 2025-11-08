@@ -1,0 +1,182 @@
+{
+  "moderation": {
+    "modRoleIds": [],
+    "adminRoleIds": [
+      "1434967117337198715",
+      "1435663391854166126"
+    ],
+    "logsChannelId": "1435646523584024697",
+    "bannerUrl": "👍",
+    "dmTemplates": {
+      "warn": "You have been **warned** in {server}. Reason: {reason}",
+      "timeout": "You have been **timed out** in {server} for {duration}. Reason: {reason}",
+      "softban": "You have been **soft-banned** in {server}. Reason: {reason}",
+      "ban": "You have been **banned** in {server}. Reason: {reason}",
+      "kick": "You have been **kicked** from {server}. Reason: {reason}"
+    },
+    "dmEnabled": {
+      "warn": true,
+      "timeout": true,
+      "ban": true,
+      "kick": true,
+      "softban": true
+    },
+    "requireReason": true,
+    "confirmationsEphemeral": true,
+    "logStyle": "stacked",
+    "escalation": {
+      "warnThreshold": 3,
+      "timeoutMinutes": 30,
+      "enabled": false
+    },
+    "settings": {
+      "dmsEnabled": true,
+      "logStyle": "detailed",
+      "theme": "accent",
+      "bannerUrl": "https://cdn.discordapp.com/attachments/1435646523584024697/1435687691219107983/Blue_White_Gradient_Modern_Professional_Business_General_LinkedIn_Banner_3.png?ex=690cdfdb&is=690b8e5b&hm=f4730e62195977f96e716e638a1dc516e35deafbec0518303114455b563fd632"
+    }
+  },
+  "tickets": {
+    "managerRoleIds": [
+      "1434967117337198715"
+    ],
+    "staffRoleIds": [
+      "1434967117337198715"
+    ],
+    "pingRoleIds": [
+      "1434967117337198715"
+    ],
+    "categoryId": "1434903737352192244",
+    "logsChannelId": "1434903737352192245",
+    "transcriptChannelId": "1436371169816350792",
+    "dmsEnabled": true,
+    "claim": {
+      "lockOnClaim": true
+    },
+    "channelNamePattern": "ticket-${number}-${user}",
+    "style": "select",
+    "panel": {
+      "title": "<:v11:1436075807910137906> Welcome to MagicUI Support",
+      "description": "Welcome to the official Magic UI support. We're here to assist with anything related to design, code, billing, access, or technical problems. Please follow the steps carefully and choose the correct reason to avoid delays.",
+      "footerIcon": null,
+      "largeImageUrl": "https://cdn.discordapp.com/attachments/1435674664859861163/1436368881122938961/Blue_White_Gradient_Modern_Professional_Business_General_LinkedIn_Banner_7.png?ex=690f5a43&is=690e08c3&hm=8043c1e42b7f141f53acd689f88902525192cc235fab359ace75fc9a6807c99b",
+      "selectPlaceholder": "Choose a ticket type",
+      "options": [
+        {
+          "key": "1",
+          "label": "111",
+          "description": "111",
+          "emoji": "",
+          "openTitle": "Ticket Created"
+        },
+        {
+          "key": "bug",
+          "label": "report bug",
+          "description": "buggy",
+          "emoji": "",
+          "openTitle": "Ticket Created"
+        }
+      ]
+    },
+    "buttons": {
+      "claim": {
+        "label": "Claim",
+        "emoji": "<:v3:1435691439345635499>"
+      },
+      "hold": {
+        "label": "Hold",
+        "emoji": "⏸️"
+      },
+      "close": {
+        "label": "Close",
+        "emoji": "🔒"
+      }
+    },
+    "counter": 2,
+    "ready": true,
+    "activeTickets": {}
+  },
+  "antiraid": {
+    "enabled": true,
+    "active": false,
+    "spam": {
+      "windowSec": 3,
+      "maxMsgs": 6,
+      "action": "timeout",
+      "timeoutMinutes": 10
+    },
+    "joins": {
+      "windowSec": 30,
+      "maxJoins": 6,
+      "action": "raidmode"
+    },
+    "newAccountMinHours": 2,
+    "raidmode": {
+      "slowmodeSec": 23,
+      "lockdown": true
+    }
+  },
+  "guildId": "1434903735905288436",
+  "stats": {
+    "978621098134495234": {
+      "warns": 1
+    },
+    "483045902039252992": {
+      "warns": 1
+    }
+  },
+  "tickets2": {
+    "managersRoleIds": [],
+    "agentRoleIds": [],
+    "pingRoleIds": [],
+    "logsChannelId": null,
+    "transcriptChannelId": null,
+    "categoryId": null,
+    "counter": 1,
+    "channelNameTemplate": "ticket-{number}-{user}",
+    "dms": {
+      "onOpen": true,
+      "onClose": true
+    },
+    "claim": {
+      "lockAgentsOnClaim": true
+    },
+    "panel": {
+      "style": "buttons",
+      "channelId": null,
+      "bannerUrl": null,
+      "buttonLabel": "Open Ticket",
+      "selectPlaceholder": "Choose a reason",
+      "reasons": [
+        {
+          "key": "support",
+          "label": "General Support",
+          "emoji": "🎫"
+        },
+        {
+          "key": "report",
+          "label": "Report a User",
+          "emoji": "🚩"
+        },
+        {
+          "key": "appeal",
+          "label": "Punishment Appeal",
+          "emoji": "🛡️"
+        }
+      ]
+    },
+    "templates": {
+      "panel": {
+        "title": "Need Help? Open a Ticket",
+        "description": "Click the button or pick a reason.\nOur team will assist you shortly."
+      },
+      "headerTitle": "Ticket • {reason}",
+      "headerDescription": "Hello {user}, describe your issue.",
+      "closedNote": "This ticket is now closed.",
+      "ticketLogOpen": "{user} opened a ticket: **{reason}**",
+      "ticketLogClose": "Ticket closed by {moderator}. Reason: {reason}",
+      "ticketDMOpen": "Your ticket in {server} has been created.",
+      "ticketDMClose": "Your ticket in {server} has been closed. Reason: {reason}"
+    }
+  }
+}

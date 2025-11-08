@@ -1,0 +1,26 @@
+{
+  "name": "arviobot",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "AI-powered moderation bot for Discord built by Edis.",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "node src/index.js",
+    "deploy": "node src/deploy-commands.js"
+  },
+  "keywords": [],
+  "author": "Edissz",
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Edissz/Arvio.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Edissz/Arvio/issues"
+  },
+  "homepage": "https://github.com/Edissz/Arvio#readme",
+  "dependencies": {
+    "discord.js": "^14.14.0",
+    "dotenv": "^16.4.5"
+  }
+}
