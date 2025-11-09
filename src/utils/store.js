@@ -29,6 +29,7 @@ export function mergeConfig(guildId, patch) {
     ...patch,
     moderation: { ...(cur.moderation || {}), ...(patch.moderation || {}) },
     tickets: { ...(cur.tickets || {}), ...(patch.tickets || {}) },
+    aimonitor: { ...(cur.aimonitor || {}), ...(patch.aimonitor || {}) } // added AI Monitor merge
   };
   writeConfig(guildId, next);
   return next;
@@ -36,6 +37,7 @@ export function mergeConfig(guildId, patch) {
 
 export function withDefaults(cfg = {}) {
   return {
+    /* ---------- MODERATION ---------- */
     moderation: {
       modRoleIds: cfg?.moderation?.modRoleIds ?? [],
       adminRoleIds: cfg?.moderation?.adminRoleIds ?? [],
@@ -73,9 +75,7 @@ export function withDefaults(cfg = {}) {
       transcriptEnabled: cfg?.tickets?.transcriptEnabled ?? true,
       transcriptFormat: cfg?.tickets?.transcriptFormat ?? 'txt',
       channelNamePattern: cfg?.tickets?.channelNamePattern ?? 'ticket-${number}-${user}',
-      claim: {
-        lockOnClaim: cfg?.tickets?.claim?.lockOnClaim ?? true
-      },
+      claim: { lockOnClaim: cfg?.tickets?.claim?.lockOnClaim ?? true },
       counter: cfg?.tickets?.counter ?? 1,
       panel: {
         style: cfg?.tickets?.panel?.style ?? 'buttons',
@@ -83,10 +83,12 @@ export function withDefaults(cfg = {}) {
         description: cfg?.tickets?.panel?.description ?? 'Open a ticket and our team will assist you.',
         largeImageUrl: cfg?.tickets?.panel?.largeImageUrl ?? null,
         selectPlaceholder: cfg?.tickets?.panel?.selectPlaceholder ?? 'Choose a ticket type',
-        options: Array.isArray(cfg?.tickets?.panel?.options) ? cfg.tickets.panel.options : [
-          { key: 'support', label: 'Support', description: 'General help', emoji: '🎫', style: 'Primary' },
-          { key: 'reports', label: 'Report', description: 'Report an issue', emoji: '🚨', style: 'Secondary' }
-        ]
+        options: Array.isArray(cfg?.tickets?.panel?.options)
+          ? cfg.tickets.panel.options
+          : [
+              { key: 'support', label: 'Support', description: 'General help', emoji: '🎫', style: 'Primary' },
+              { key: 'reports', label: 'Report', description: 'Report an issue', emoji: '🚨', style: 'Secondary' }
+            ]
       },
       ready: cfg?.tickets?.ready ?? false,
       activeTickets: cfg?.tickets?.activeTickets ?? {}
@@ -112,6 +114,29 @@ export function withDefaults(cfg = {}) {
         slowmodeSec: cfg?.antiraid?.raidmode?.slowmodeSec ?? 5,
         lockdown: cfg?.antiraid?.raidmode?.lockdown ?? false
       }
+    },
+
+    /* ---------- AI MONITOR ---------- */
+    aimonitor: {
+      enabled: cfg?.aimonitor?.enabled ?? false,
+      channels: cfg?.aimonitor?.channels ?? [],
+      topics: cfg?.aimonitor?.topics ?? ['toxicity', 'spam', 'hate', 'nsfw', 'offtopic', 'scam'],
+      strictness: cfg?.aimonitor?.strictness ?? 2,
+      actions: cfg?.aimonitor?.actions ?? {
+        toxicity: 'warn',
+        spam: 'delete',
+        hate: 'ban',
+        nsfw: 'delete',
+        offtopic: 'log',
+        scam: 'ban'
+      },
+      noticeChannelId: cfg?.aimonitor?.noticeChannelId ?? null,
+      customRules: cfg?.aimonitor?.customRules ?? '',
+      exemptRoles: cfg?.aimonitor?.exemptRoles ?? [],
+      protectedRoles: cfg?.aimonitor?.protectedRoles ?? [],
+      adminRoles: cfg?.aimonitor?.adminRoles ?? [],
+      lastUpdatedBy: cfg?.aimonitor?.lastUpdatedBy ?? null,
+      lastUpdatedAt: cfg?.aimonitor?.lastUpdatedAt ?? null
     },
 
     ...cfg
