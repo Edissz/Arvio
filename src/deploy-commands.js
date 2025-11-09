@@ -19,6 +19,7 @@ if (!TOKEN || !CLIENT_ID) {
 
 const commands = [];
 const commandsPath = path.join(__dirname, 'commands');
+
 for (const file of fs.readdirSync(commandsPath).filter(f => f.endsWith('.js'))) {
   const mod = await import(`./commands/${file}`);
   const cmd = mod.default ?? mod;
@@ -31,7 +32,7 @@ const rest = new REST({ version: '10' }).setToken(TOKEN);
 
 try {
   await rest.put(Routes.applicationCommands(CLIENT_ID), { body: commands });
-  console.log('✅ Global commands deployed (may take up to 10 min to appear).');
+  console.log('✅ Global commands deployed (may take up to 10 minutes to appear globally).');
 } catch (err) {
   console.error('❌ Failed to deploy commands:', err);
 }
