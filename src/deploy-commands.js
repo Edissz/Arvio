@@ -11,7 +11,7 @@ const __dirname = path.dirname(__filename);
 
 const TOKEN = process.env.DISCORD_TOKEN;
 const CLIENT_ID = process.env.DISCORD_CLIENT_ID;
-const GUILD_ID = 'YOUR_GUILD_ID'; // Replace with your Discord server ID
+const GUILD_ID = '1434903735905288436'; // Replace with your Discord server ID
 
 if (!TOKEN || !CLIENT_ID) {
   console.error('❌ Missing DISCORD_TOKEN or DISCORD_CLIENT_ID in .env');
