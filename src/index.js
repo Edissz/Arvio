@@ -5,7 +5,8 @@ import { Client, Collection, GatewayIntentBits, Partials } from 'discord.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { initTickets } from './features/tickets.js'; 
+import { initTickets } from './features/tickets.js';
+import { refreshCommands } from './register/refresh-commands.js'; // <-- new auto-register
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -48,6 +49,18 @@ initTickets(client);
 client.login(process.env.DISCORD_TOKEN)
   .then(() => console.log('✅ Arvio Bot is online!'))
   .catch(err => console.error('❌ Login failed:', err));
+
+client.once('ready', async () => {
+  console.log(`✅ Logged in as ${client.user.tag}`);
+  if (process.env.AUTO_REGISTER_COMMANDS === 'true') {
+    try {
+      await refreshCommands();
+      console.log('✅ Slash commands refreshed automatically.');
+    } catch (e) {
+      console.error('❌ Failed to refresh commands:', e);
+    }
+  }
+});
 
 process.on('unhandledRejection', err => console.error('Unhandled Rejection:', err));
 process.on('uncaughtException', err => console.error('Uncaught Exception:', err));
