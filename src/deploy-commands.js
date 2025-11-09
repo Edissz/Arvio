@@ -11,9 +11,10 @@ const __dirname = path.dirname(__filename);
 
 const TOKEN = process.env.DISCORD_TOKEN;
 const CLIENT_ID = process.env.DISCORD_CLIENT_ID;
+const GUILD_ID = 'YOUR_GUILD_ID'; // replace with your server ID (right-click → Copy ID)
 
-if (!TOKEN || !CLIENT_ID) {
-  console.error('❌ Missing DISCORD_TOKEN or DISCORD_CLIENT_ID in .env');
+if (!TOKEN || !CLIENT_ID || !GUILD_ID) {
+  console.error('❌ Missing token, client, or guild ID.');
   process.exit(1);
 }
 
@@ -27,12 +28,12 @@ for (const file of fs.readdirSync(commandsPath).filter(f => f.endsWith('.js'))) 
   commands.push(cmd.data.toJSON());
 }
 
-console.log(`🚀 Deploying ${commands.length} global slash command(s)...`);
+console.log(`🚀 Deploying ${commands.length} slash command(s) to guild ${GUILD_ID}...`);
 const rest = new REST({ version: '10' }).setToken(TOKEN);
 
 try {
-  await rest.put(Routes.applicationCommands(CLIENT_ID), { body: commands });
-  console.log('✅ Global commands deployed (may take up to 10 minutes to appear globally).');
+  await rest.put(Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID), { body: commands });
+  console.log('✅ Commands deployed instantly (guild mode).');
 } catch (err) {
-  console.error('❌ Failed to deploy commands:', err);
+  console.error('❌ Failed to deploy:', err);
 }
