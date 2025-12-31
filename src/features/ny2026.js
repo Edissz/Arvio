@@ -39,7 +39,7 @@ function buildGiveawayEmbed() {
     .setDescription(
       [
         "We’re celebrating **2,000 Discord members** + **20,000 GitHub stars**.",
-        `Click **Spin Now** - you get **${config.spinsPerUser} spin**.`,
+        `Click **Spin Now** — you get **${config.spinsPerUser} spin**.`,
         "",
         `Available until <t:${endUnix}:f> (before 2026).`,
       ].join("\n")
