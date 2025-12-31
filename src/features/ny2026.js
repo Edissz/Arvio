@@ -131,7 +131,7 @@ async function buildResultPayload({ interaction, picked, spinsLeft }) {
         `**Voucher ID:** \`${voucher.id}\``,
         "",
         "Save this ID. Admins can verify it with:",
-        `\`/checkid id:${voucher.id}\``,
+        `\`!checkid ${voucher.id}\``,
         "",
         "If you need redeem help, open a support ticket and paste the ID.",
       ].join("\n")
