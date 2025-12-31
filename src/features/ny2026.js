@@ -21,6 +21,15 @@ function ansiWon(prizeLabel) {
   ].join("\n")
 }
 
+function formatOdds() {
+  const entries = Object.entries(config.rewards || {})
+  const lines = entries
+    .filter(([, r]) => r?.label && typeof r.weight === "number")
+    .sort((a, b) => (b[1].weight || 0) - (a[1].weight || 0))
+    .map(([, r]) => `• **${r.label}** — **${r.weight}%**`)
+  return lines.length ? lines.join("\n") : "Odds unavailable."
+}
+
 function buildGiveawayEmbed() {
   const endUnix = endAtUnix()
 
@@ -35,6 +44,7 @@ function buildGiveawayEmbed() {
         `Available until <t:${endUnix}:f> (before 2026).`,
       ].join("\n")
     )
+    .addFields({ name: "Prizes & Odds", value: formatOdds(), inline: false })
     // ✅ FIRST banner only here
     .setImage(config.bannerImageUrl)
     .setTimestamp()
@@ -131,7 +141,6 @@ async function buildResultPayload({ interaction, picked, spinsLeft }) {
           `Available until <t:${endUnix}:f> (before 2026).`,
         ].join("\n")
       )
-      // keep main banner for role wins
       .setImage(config.bannerImageUrl)
       .setTimestamp()
 
@@ -161,7 +170,6 @@ async function buildResultPayload({ interaction, picked, spinsLeft }) {
         "Claim it via Support (button below).",
       ].join("\n")
     )
-    // ✅ SECOND voucher ticket image ONLY for voucher wins
     .setImage(config.voucherImageUrl || config.bannerImageUrl)
     .setTimestamp()
 
@@ -178,7 +186,7 @@ export default {
   isExpired,
   endAtMs,
   buildGiveawayEmbed,
-  buildSpinRow: buildMainRow, // keep compatibility with sender
+  buildSpinRow: buildMainRow,
   weightedPick,
   buildResultPayload,
 }
