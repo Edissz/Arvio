@@ -5,29 +5,31 @@ export default {
 
   spinsPerUser: 1,
 
-  // ✅ Adjusted to be harder to hit vouchers (backend only)
-  // Total = 100
+  // Total MUST be 100 so the % is real.
   rewards: {
     participation: {
       label: "NY 2026 Participation Role",
-      weight: 82,
+      weight: 60,
       type: "role",
       roleId: process.env.NY2026_PARTICIPATION_ROLE_ID || "",
       roleNameFallback: "NY 2026 Participant",
     },
+
     discount30: {
       label: "30% Discount Voucher",
-      weight: 30,
+      weight: 33,
       type: "voucher",
     },
+
     template: {
       label: "Free Template Voucher",
-      weight: 10,
+      weight: 5,
       type: "voucher",
     },
+
     pro: {
       label: "MagicUI Pro (1x) Voucher",
-      weight: 4,
+      weight: 2,
       type: "voucher",
     },
   },
@@ -38,11 +40,9 @@ export default {
 
   voucherPrefix: "NY26",
 
-  // main giveaway banner (only on the main embed)
   bannerImageUrl:
     "https://cdn.discordapp.com/attachments/1441524770083573770/1455979693256736899/Black_Yellow_White_Modern_Black_Friday_Sale_Banner_2.png?ex=6956b241&is=695560c1&hm=af48e8fc2a1a1b5acff3067990178517b850fcc4bc020d95026f1ae78f9745d0",
 
-  // voucher ticket image (only when they win a voucher)
   voucherImageUrl:
     "https://cdn.discordapp.com/attachments/1224427755702194277/1455986106725040293/Black_and_White_Minimalist_Fashion_Special_Gift_Voucher_Ticket_1.png?ex=6956b83a&is=695566ba&hm=71880fc36ca9b8a96f15f1ee5d958d69a2f6d9d81d453e937fd2b45987d7ac85",
 
