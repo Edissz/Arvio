@@ -1,164 +1,155 @@
-import fs from 'fs';
-import path from 'path';
+import fs from "fs"
+import fsp from "fs/promises"
+import path from "path"
+import crypto from "crypto"
+import config from "../../ny2026-config.js"
 
-const dataDir = path.join(process.cwd(), 'data');
-if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir);
+const DATA_DIR = path.join(process.cwd(), "data")
+const DATA_FILE = path.join(DATA_DIR, "ny2026.json")
 
-export function readConfig(guildId) {
-  const file = path.join(dataDir, `${guildId}.json`);
-  if (!fs.existsSync(file)) return {};
-  try { return JSON.parse(fs.readFileSync(file, 'utf8')); }
-  catch { return {}; }
+let writeQueue = Promise.resolve()
+
+function defaultState() {
+  return { meta: {}, users: {}, vouchers: {} }
 }
 
-export function writeConfig(guildId, cfg) {
-  const file = path.join(dataDir, `${guildId}.json`);
-  fs.writeFileSync(file, JSON.stringify(cfg, null, 2));
+async function ensurePaths() {
+  if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true })
+  if (!fs.existsSync(DATA_FILE)) {
+    await fsp.writeFile(DATA_FILE, JSON.stringify(defaultState(), null, 2), "utf8")
+  }
 }
 
-/* ---------- MODERATION ---------- */
-export function hasSetup(cfg) {
-  const m = cfg?.moderation;
-  return Boolean(m && m.logsChannelId && (m.modRoleIds?.length || m.adminRoleIds?.length));
+async function load() {
+  await ensurePaths()
+  const raw = await fsp.readFile(DATA_FILE, "utf8")
+  try {
+    return JSON.parse(raw)
+  } catch {
+    return defaultState()
+  }
 }
 
-export function mergeConfig(guildId, patch) {
-  const cur = readConfig(guildId);
-  const next = {
-    ...cur,
-    ...patch,
-    moderation: { ...(cur.moderation || {}), ...(patch.moderation || {}) },
-    tickets: { ...(cur.tickets || {}), ...(patch.tickets || {}) },
-    aimonitor: { ...(cur.aimonitor || {}), ...(patch.aimonitor || {}) } // added AI Monitor merge
-  };
-  writeConfig(guildId, next);
-  return next;
+async function save(state) {
+  await ensurePaths()
+  const tmp = DATA_FILE + ".tmp"
+  await fsp.writeFile(tmp, JSON.stringify(state, null, 2), "utf8")
+  await fsp.rename(tmp, DATA_FILE)
 }
 
-export function withDefaults(cfg = {}) {
-  return {
-    /* ---------- MODERATION ---------- */
-    moderation: {
-      modRoleIds: cfg?.moderation?.modRoleIds ?? [],
-      adminRoleIds: cfg?.moderation?.adminRoleIds ?? [],
-      logsChannelId: cfg?.moderation?.logsChannelId ?? null,
-      bannerUrl: cfg?.moderation?.bannerUrl ?? null,
-      settings: {
-        dmsEnabled: cfg?.moderation?.settings?.dmsEnabled ?? true,
-        logStyle: cfg?.moderation?.settings?.logStyle ?? 'compact',
-        theme: cfg?.moderation?.settings?.theme ?? 'primary'
-      },
-      dmTemplates: {
-        warn: cfg?.moderation?.dmTemplates?.warn ?? 'You have been **warned** in {server}. Reason: {reason}',
-        timeout: cfg?.moderation?.dmTemplates?.timeout ?? 'You have been **timed out** in {server} for {duration}. Reason: {reason}',
-        softban: cfg?.moderation?.dmTemplates?.softban ?? 'You have been **soft-banned** in {server}. Reason: {reason}',
-        ban: cfg?.moderation?.dmTemplates?.ban ?? 'You have been **banned** in {server}. Reason: {reason}',
-        kick: cfg?.moderation?.dmTemplates?.kick ?? 'You have been **kicked** from {server}. Reason: {reason}'
-      },
-      requireReason: cfg?.moderation?.requireReason ?? false,
-      escalation: {
-        enabled: cfg?.moderation?.escalation?.enabled ?? false,
-        warnThreshold: cfg?.moderation?.escalation?.warnThreshold ?? 3,
-        timeoutMinutes: cfg?.moderation?.escalation?.timeoutMinutes ?? 30
+function withWriteLock(fn) {
+  writeQueue = writeQueue.then(fn).catch(() => {})
+  return writeQueue
+}
+
+const ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"
+
+function randomCode(len = 8) {
+  const bytes = crypto.randomBytes(len)
+  let out = ""
+  for (let i = 0; i < len; i++) out += ALPHABET[bytes[i] % ALPHABET.length]
+  return out
+}
+
+function normalizeVoucherId(input) {
+  if (!input) return ""
+  const s = String(input).trim().toUpperCase()
+  if (s.startsWith(`${config.voucherPrefix}-`)) return s
+  if (/^[A-Z2-9]{6,14}$/.test(s)) return `${config.voucherPrefix}-${s}`
+  if (/^\d{4,10}$/.test(s)) return `${config.voucherPrefix}-${s}`
+  return s
+}
+
+function ensureUser(state, userId) {
+  if (!state.users[userId]) {
+    state.users[userId] = { spinsUsed: 0, extraSpins: 0, lastSpinAt: null }
+  } else {
+    if (typeof state.users[userId].spinsUsed !== "number") state.users[userId].spinsUsed = 0
+    if (typeof state.users[userId].extraSpins !== "number") state.users[userId].extraSpins = 0
+    if (!("lastSpinAt" in state.users[userId])) state.users[userId].lastSpinAt = null
+  }
+  return state.users[userId]
+}
+
+async function getUser(userId) {
+  const state = await load()
+  const u = ensureUser(state, userId)
+  await save(state)
+  return u
+}
+
+async function addSpin(userId) {
+  return withWriteLock(async () => {
+    const state = await load()
+    const u = ensureUser(state, userId)
+    u.spinsUsed += 1
+    u.lastSpinAt = new Date().toISOString()
+    await save(state)
+    return u
+  })
+}
+
+// ✅ THIS is what your command needs
+async function addExtraSpins(userId, amount = 1) {
+  return withWriteLock(async () => {
+    const state = await load()
+    const u = ensureUser(state, userId)
+    const n = Number.isFinite(amount) ? amount : 1
+    u.extraSpins = Math.max(0, (u.extraSpins || 0) + n)
+    await save(state)
+    return u
+  })
+}
+
+async function issueVoucher({ userId, prizeKey, prizeLabel, guildId }) {
+  return withWriteLock(async () => {
+    const state = await load()
+
+    let id = ""
+    for (let i = 0; i < 12; i++) {
+      const candidate = `${config.voucherPrefix}-${randomCode(8)}`
+      if (!state.vouchers[candidate]) {
+        id = candidate
+        break
       }
-    },
+    }
+    if (!id) id = `${config.voucherPrefix}-${randomCode(10)}`
 
-    /* ---------- TICKETS ---------- */
-    tickets: {
-      managerRoleIds: cfg?.tickets?.managerRoleIds ?? [],
-      staffRoleIds: cfg?.tickets?.staffRoleIds ?? [],
-      pingRoleIds: cfg?.tickets?.pingRoleIds ?? [],
-      categoryId: cfg?.tickets?.categoryId ?? null,
-      logsChannelId: cfg?.tickets?.logsChannelId ?? null,
-      transcriptChannelId: cfg?.tickets?.transcriptChannelId ?? null,
-      dmsEnabled: cfg?.tickets?.dmsEnabled ?? true,
-      transcriptEnabled: cfg?.tickets?.transcriptEnabled ?? true,
-      transcriptFormat: cfg?.tickets?.transcriptFormat ?? 'txt',
-      channelNamePattern: cfg?.tickets?.channelNamePattern ?? 'ticket-${number}-${user}',
-      claim: { lockOnClaim: cfg?.tickets?.claim?.lockOnClaim ?? true },
-      counter: cfg?.tickets?.counter ?? 1,
-      panel: {
-        style: cfg?.tickets?.panel?.style ?? 'buttons',
-        title: cfg?.tickets?.panel?.title ?? 'Need Help?',
-        description: cfg?.tickets?.panel?.description ?? 'Open a ticket and our team will assist you.',
-        largeImageUrl: cfg?.tickets?.panel?.largeImageUrl ?? null,
-        selectPlaceholder: cfg?.tickets?.panel?.selectPlaceholder ?? 'Choose a ticket type',
-        options: Array.isArray(cfg?.tickets?.panel?.options)
-          ? cfg.tickets.panel.options
-          : [
-              { key: 'support', label: 'Support', description: 'General help', emoji: '🎫', style: 'Primary' },
-              { key: 'reports', label: 'Report', description: 'Report an issue', emoji: '🚨', style: 'Secondary' }
-            ]
-      },
-      ready: cfg?.tickets?.ready ?? false,
-      activeTickets: cfg?.tickets?.activeTickets ?? {}
-    },
+    state.vouchers[id] = {
+      id,
+      userId,
+      guildId: guildId || null,
+      prizeKey,
+      prizeLabel,
+      issuedAt: new Date().toISOString(),
+    }
 
-    /* ---------- ANTI RAID ---------- */
-    antiraid: {
-      enabled: cfg?.antiraid?.enabled ?? true,
-      active: cfg?.antiraid?.active ?? false,
-      spam: {
-        windowSec: cfg?.antiraid?.spam?.windowSec ?? 7,
-        maxMsgs: cfg?.antiraid?.spam?.maxMsgs ?? 6,
-        action: cfg?.antiraid?.spam?.action ?? 'timeout',
-        timeoutMinutes: cfg?.antiraid?.spam?.timeoutMinutes ?? 10
-      },
-      joins: {
-        windowSec: cfg?.antiraid?.joins?.windowSec ?? 30,
-        maxJoins: cfg?.antiraid?.joins?.maxJoins ?? 6,
-        action: cfg?.antiraid?.joins?.action ?? 'raidmode'
-      },
-      newAccountMinHours: cfg?.antiraid?.newAccountMinHours ?? 0,
-      raidmode: {
-        slowmodeSec: cfg?.antiraid?.raidmode?.slowmodeSec ?? 5,
-        lockdown: cfg?.antiraid?.raidmode?.lockdown ?? false
-      }
-    },
-
-    /* ---------- AI MONITOR ---------- */
-    aimonitor: {
-      enabled: cfg?.aimonitor?.enabled ?? false,
-      channels: cfg?.aimonitor?.channels ?? [],
-      topics: cfg?.aimonitor?.topics ?? ['toxicity', 'spam', 'hate', 'nsfw', 'offtopic', 'scam'],
-      strictness: cfg?.aimonitor?.strictness ?? 2,
-      actions: cfg?.aimonitor?.actions ?? {
-        toxicity: 'warn',
-        spam: 'delete',
-        hate: 'ban',
-        nsfw: 'delete',
-        offtopic: 'log',
-        scam: 'ban'
-      },
-      noticeChannelId: cfg?.aimonitor?.noticeChannelId ?? null,
-      customRules: cfg?.aimonitor?.customRules ?? '',
-      exemptRoles: cfg?.aimonitor?.exemptRoles ?? [],
-      protectedRoles: cfg?.aimonitor?.protectedRoles ?? [],
-      adminRoles: cfg?.aimonitor?.adminRoles ?? [],
-      lastUpdatedBy: cfg?.aimonitor?.lastUpdatedBy ?? null,
-      lastUpdatedAt: cfg?.aimonitor?.lastUpdatedAt ?? null
-    },
-
-    ...cfg
-  };
+    await save(state)
+    return state.vouchers[id]
+  })
 }
 
-/* ---------- TICKET HELPERS ---------- */
-export function hasTicketSetup(cfg) {
-  const t = cfg?.tickets;
-  return Boolean(
-    t &&
-    t.ready &&
-    t.categoryId &&
-    t.logsChannelId &&
-    Array.isArray(t.panel?.options) &&
-    t.panel.options.length > 0
-  );
+async function findVoucher(voucherIdRaw) {
+  const id = normalizeVoucherId(voucherIdRaw)
+  const state = await load()
+  return state.vouchers[id] || null
 }
 
-export function mergeTicketConfig(guildId, patch) {
-  const cur = readConfig(guildId);
-  const next = { ...cur, tickets: { ...(cur.tickets || {}), ...(patch.tickets || {}) } };
-  writeConfig(guildId, next);
-  return next;
+async function setMeta(metaPatch) {
+  return withWriteLock(async () => {
+    const state = await load()
+    state.meta = { ...(state.meta || {}), ...(metaPatch || {}) }
+    await save(state)
+    return state.meta
+  })
+}
+
+export default {
+  normalizeVoucherId,
+  getUser,
+  addSpin,
+  addExtraSpins,
+  issueVoucher,
+  findVoucher,
+  setMeta,
 }

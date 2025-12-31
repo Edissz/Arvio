@@ -17,17 +17,17 @@ export default {
     },
     discount30: {
       label: "30% Discount Voucher",
-      weight: 17,
+      weight: 30,
       type: "voucher",
     },
     template: {
       label: "Free Template Voucher",
-      weight: 4,
+      weight: 10,
       type: "voucher",
     },
     pro: {
       label: "MagicUI Pro (1x) Voucher",
-      weight: 2,
+      weight: 4,
       type: "voucher",
     },
   },
