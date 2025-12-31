@@ -1,6 +1,6 @@
 import config from "../../ny2026-config.js"
 import store from "../utils/ny2026-store.js"
-import { Embed, ActionRow, Button, buttonPrimary } from "../utils/djs-compat.js"
+import { Embed, ActionRow, Button, buttonPrimary, buttonLink } from "../utils/djs-compat.js"
 
 function endAtMs() {
   return Date.parse(config.endAtIso)
@@ -19,34 +19,56 @@ function oddsLines() {
 function buildGiveawayEmbed() {
   const embed = new Embed()
     .setColor(config.brandColor)
-    .setTitle("🎡 MagicUI New Year Spin — Limited Event")
+    .setTitle("MagicUI New Year Spin — Limited-Time Event")
     .setDescription(
       [
-        "🎉 We’re celebrating **2,000 Discord members** + **20,000 GitHub stars** — thank you for building with MagicUI.",
+        "Happy New Year — and thank you for an amazing year with MagicUI.",
         "",
-        "Click the button to spin your rewards.",
-        `Everyone gets **${config.spinsPerUser} spins**.`,
+        "To celebrate **2,000 Discord members** and **20,000 GitHub stars**, we’re running a limited spin event.",
         "",
-        `⏳ Ends **before 2026** (${config.endAtIso}).`,
+        `Each member gets **${config.spinsPerUser} spin**. Click **Spin Now** to roll your reward.`,
+        "",
+        `**Ends:** ${config.endAtIso} (CET) — available only before 2026.`,
       ].join("\n")
     )
     .addFields(
-      { name: "🎯 Odds", value: oddsLines(), inline: false },
+      { name: "Odds", value: oddsLines(), inline: false },
       {
-        name: "🧠 Rules",
+        name: "How claiming works",
         value:
-          "• Spins are tracked per user\n• Results are private (only you can see them)\n• Voucher IDs are stored + admin-verifiable",
+          "If you receive a voucher reward, open a ticket via **Support** using the button below and include your voucher ID.\nA staff member will help you claim it.",
+        inline: false,
+      },
+      {
+        name: "Rules",
+        value:
+          "• Spins are tracked per user\n• Results are private (only you can see them)\n• Voucher IDs are logged and staff-verifiable\n• Please don’t share voucher IDs publicly",
         inline: false,
       }
     )
+    .setImage(config.bannerImageUrl)
+    .setFooter({ text: "MagicUI — New Year Event" })
     .setTimestamp()
 
   return embed
 }
 
-function buildSpinRow() {
+function buildMainRow() {
   return new ActionRow().addComponents(
-    new Button().setCustomId(config.buttonCustomId).setStyle(buttonPrimary).setLabel("Spin Now 🎰")
+    new Button()
+      .setCustomId(config.buttonCustomId)
+      .setStyle(buttonPrimary)
+      .setLabel("Spin Now"),
+    new Button()
+      .setStyle(buttonLink)
+      .setURL(config.claimUrl)
+      .setLabel("Open Support / Claim")
+  )
+}
+
+function buildClaimRowOnly() {
+  return new ActionRow().addComponents(
+    new Button().setStyle(buttonLink).setURL(config.claimUrl).setLabel("Open Support / Claim")
   )
 }
 
@@ -96,24 +118,24 @@ async function ensureParticipationRole(guild) {
 async function buildResultPayload({ interaction, picked, spinsLeft }) {
   const base = new Embed()
     .setColor(config.brandColor)
-    .setTitle("🎡 Spin Result")
-    .setDescription(`You won: **${picked.reward.label}**`)
-    .addFields({ name: "🎟️ Spins left", value: String(spinsLeft), inline: true })
+    .setTitle("Spin Result")
+    .setDescription(`Reward: **${picked.reward.label}**`)
+    .addFields({ name: "Spins remaining", value: String(spinsLeft), inline: true })
     .setTimestamp()
 
   if (picked.reward.type === "role") {
     const role = await ensureParticipationRole(interaction.guild)
     if (role) {
       await interaction.member.roles.add(role).catch(() => {})
-      base.addFields({ name: "✅ Role", value: `Added: <@&${role.id}>`, inline: false })
+      base.addFields({ name: "Role", value: `Assigned: <@&${role.id}>`, inline: false })
     } else {
       base.addFields({
-        name: "⚠️ Role",
-        value: "Couldn’t auto-assign (missing role ID / Manage Roles / role hierarchy). Admins can assign manually.",
+        name: "Role",
+        value: "Could not auto-assign (missing role ID / permissions / role hierarchy). Staff can assign it manually.",
         inline: false,
       })
     }
-    return { embeds: [base] }
+    return { embeds: [base], components: [buildClaimRowOnly()] }
   }
 
   const voucher = await store.issueVoucher({
@@ -125,27 +147,26 @@ async function buildResultPayload({ interaction, picked, spinsLeft }) {
 
   const voucherEmbed = new Embed()
     .setColor(config.brandColor)
-    .setTitle("🎫 Voucher Details")
+    .setTitle("Voucher Information")
     .setDescription(
       [
+        "Keep this voucher ID private.",
+        "To claim your reward, open a Support ticket and include the ID below.",
+        "",
         `**Voucher ID:** \`${voucher.id}\``,
-        "",
-        "Save this ID. Admins can verify it with:",
-        `\`!checkid ${voucher.id}\``,
-        "",
-        "If you need redeem help, open a support ticket and paste the ID.",
       ].join("\n")
     )
+    .setFooter({ text: "Claim via Support — staff will verify your voucher ID" })
     .setTimestamp()
 
-  return { embeds: [base, voucherEmbed] }
+  return { embeds: [base, voucherEmbed], components: [buildClaimRowOnly()] }
 }
 
 export default {
   isExpired,
   endAtMs,
   buildGiveawayEmbed,
-  buildSpinRow,
+  buildSpinRow: buildMainRow, // keep compatibility with existing sender
   weightedPick,
   buildResultPayload,
 }

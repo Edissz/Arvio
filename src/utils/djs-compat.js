@@ -5,5 +5,6 @@ const ActionRow = djs.ActionRowBuilder || djs.MessageActionRow
 const Button = djs.ButtonBuilder || djs.MessageButton
 
 const buttonPrimary = djs.ButtonStyle?.Primary ?? "PRIMARY"
+const buttonLink = djs.ButtonStyle?.Link ?? "LINK"
 
-export { djs, Embed, ActionRow, Button, buttonPrimary }
+export { djs, Embed, ActionRow, Button, buttonPrimary, buttonLink }
