@@ -18,20 +18,15 @@ function chancesLines() {
     .join("\n")
 }
 
-// ✅ ANSI winner text (dynamic)
 function ansiWon(prizeLabel) {
   const ESC = "\u001b"
-  return [
-    "```ansi",
-    `${ESC}[2;36m${ESC}[2;35mYou have won ${prizeLabel}!${ESC}[0m${ESC}[2;36m${ESC}[0m`,
-    "```",
-  ].join("\n")
+  return ["```ansi", `${ESC}[2;36m${ESC}[2;35mYou have won ${prizeLabel}!${ESC}[0m${ESC}[2;36m${ESC}[0m`, "```"].join("\n")
 }
 
 function buildGiveawayEmbed() {
   const endUnix = endAtUnix()
   return new Embed()
-    .setColor(config.brandColor) // white
+    .setColor(config.brandColor)
     .setTitle("MagicUI New Year Spin")
     .setDescription(
       [
@@ -42,6 +37,7 @@ function buildGiveawayEmbed() {
       ].join("\n")
     )
     .addFields({ name: "Chances", value: chancesLines(), inline: false })
+    // ✅ keep old banner ONLY here
     .setImage(config.bannerImageUrl)
     .setTimestamp()
 }
@@ -120,33 +116,26 @@ async function buildResultPayload({ interaction, picked, spinsLeft }) {
     .setTitle("Spin Result")
     .setDescription(`Reward: **${picked.reward.label}**`)
     .addFields({ name: "Spins left", value: String(spinsLeft), inline: true })
-    .setImage(config.bannerImageUrl)
     .setTimestamp()
 
   // ROLE reward
   if (picked.reward.type === "role") {
     const role = await ensureParticipationRole(interaction.guild)
-    if (role) {
-      await interaction.member.roles.add(role).catch(() => {})
-    }
+    if (role) await interaction.member.roles.add(role).catch(() => {})
 
-    await safeDM(interaction.user, {
-      content: wonText,
-      embeds: [
-        new Embed()
-          .setColor(config.brandColor)
-          .setTitle("MagicUI New Year Spin")
-          .setDescription(`Your reward: **${picked.reward.label}**\nValid until <t:${endUnix}:f>.`)
-          .setImage(config.bannerImageUrl)
-          .setTimestamp(),
-      ],
-      components: [buildClaimRowOnly()],
-    })
+    const dmEmbed = new Embed()
+      .setColor(config.brandColor)
+      .setTitle("MagicUI New Year Spin")
+      .setDescription(`Your reward: **${picked.reward.label}**\nValid until <t:${endUnix}:f>.`)
+      .setImage(config.bannerImageUrl) // still fine for role
+      .setTimestamp()
+
+    await safeDM(interaction.user, { content: wonText, embeds: [dmEmbed], components: [buildClaimRowOnly()] })
 
     return { content: wonText, embeds: [resultEmbed], components: [buildClaimRowOnly()] }
   }
 
-  // VOUCHER reward
+  // VOUCHER reward (✅ use new ticket image)
   const voucher = await store.issueVoucher({
     userId: interaction.user.id,
     prizeKey: picked.key,
@@ -161,17 +150,13 @@ async function buildResultPayload({ interaction, picked, spinsLeft }) {
       [
         `**Voucher ID:** \`${voucher.id}\``,
         `Valid until <t:${endUnix}:f> (before 2026).`,
-        "Claim it via Support (button below).",
+        "Claim via Support (button below).",
       ].join("\n")
     )
-    .setImage(config.bannerImageUrl)
+    .setImage(config.voucherImageUrl || config.bannerImageUrl)
     .setTimestamp()
 
-  await safeDM(interaction.user, {
-    content: wonText,
-    embeds: [voucherEmbed],
-    components: [buildClaimRowOnly()],
-  })
+  await safeDM(interaction.user, { content: wonText, embeds: [voucherEmbed], components: [buildClaimRowOnly()] })
 
   return { content: wonText, embeds: [resultEmbed, voucherEmbed], components: [buildClaimRowOnly()] }
 }
