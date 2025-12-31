@@ -12,32 +12,30 @@ function isExpired() {
   return Date.now() >= endAtMs()
 }
 
-function chancesLines() {
-  return Object.entries(config.rewards)
-    .map(([, r]) => `• **${r.label}** — **${r.weight}%**`)
-    .join("\n")
-}
-
 function ansiWon(prizeLabel) {
   const ESC = "\u001b"
-  return ["```ansi", `${ESC}[2;36m${ESC}[2;35mYou have won ${prizeLabel}!${ESC}[0m${ESC}[2;36m${ESC}[0m`, "```"].join("\n")
+  return [
+    "```ansi",
+    `${ESC}[2;36m${ESC}[2;35mYou have won ${prizeLabel}!${ESC}[0m${ESC}[2;36m${ESC}[0m`,
+    "```",
+  ].join("\n")
 }
 
 function buildGiveawayEmbed() {
   const endUnix = endAtUnix()
+
   return new Embed()
-    .setColor(config.brandColor)
+    .setColor(config.brandColor) // white
     .setTitle("MagicUI New Year Spin")
     .setDescription(
       [
         "We’re celebrating **2,000 Discord members** + **20,000 GitHub stars**.",
         `Click **Spin Now** — you get **${config.spinsPerUser} spin**.`,
         "",
-        `Ends before 2026 — <t:${endUnix}:f>`,
+        `Available until <t:${endUnix}:f> (before 2026).`,
       ].join("\n")
     )
-    .addFields({ name: "Chances", value: chancesLines(), inline: false })
-    // ✅ keep old banner ONLY here
+    // ✅ FIRST banner only here
     .setImage(config.bannerImageUrl)
     .setTimestamp()
 }
@@ -118,7 +116,7 @@ async function buildResultPayload({ interaction, picked, spinsLeft }) {
     .addFields({ name: "Spins left", value: String(spinsLeft), inline: true })
     .setTimestamp()
 
-  // ROLE reward
+  // ✅ ROLE reward
   if (picked.reward.type === "role") {
     const role = await ensureParticipationRole(interaction.guild)
     if (role) await interaction.member.roles.add(role).catch(() => {})
@@ -126,8 +124,15 @@ async function buildResultPayload({ interaction, picked, spinsLeft }) {
     const dmEmbed = new Embed()
       .setColor(config.brandColor)
       .setTitle("MagicUI New Year Spin")
-      .setDescription(`Your reward: **${picked.reward.label}**\nValid until <t:${endUnix}:f>.`)
-      .setImage(config.bannerImageUrl) // still fine for role
+      .setDescription(
+        [
+          `Reward: **${picked.reward.label}**`,
+          "",
+          `Available until <t:${endUnix}:f> (before 2026).`,
+        ].join("\n")
+      )
+      // keep main banner for role wins
+      .setImage(config.bannerImageUrl)
       .setTimestamp()
 
     await safeDM(interaction.user, { content: wonText, embeds: [dmEmbed], components: [buildClaimRowOnly()] })
@@ -135,7 +140,7 @@ async function buildResultPayload({ interaction, picked, spinsLeft }) {
     return { content: wonText, embeds: [resultEmbed], components: [buildClaimRowOnly()] }
   }
 
-  // VOUCHER reward (✅ use new ticket image)
+  // ✅ VOUCHER reward
   const voucher = await store.issueVoucher({
     userId: interaction.user.id,
     prizeKey: picked.key,
@@ -148,24 +153,32 @@ async function buildResultPayload({ interaction, picked, spinsLeft }) {
     .setTitle("Your Voucher")
     .setDescription(
       [
+        `Reward: **${picked.reward.label}**`,
+        "",
         `**Voucher ID:** \`${voucher.id}\``,
         `Valid until <t:${endUnix}:f> (before 2026).`,
-        "Claim via Support (button below).",
+        "",
+        "Claim it via Support (button below).",
       ].join("\n")
     )
+    // ✅ SECOND voucher ticket image ONLY for voucher wins
     .setImage(config.voucherImageUrl || config.bannerImageUrl)
     .setTimestamp()
 
   await safeDM(interaction.user, { content: wonText, embeds: [voucherEmbed], components: [buildClaimRowOnly()] })
 
-  return { content: wonText, embeds: [resultEmbed, voucherEmbed], components: [buildClaimRowOnly()] }
+  return {
+    content: wonText,
+    embeds: [resultEmbed, voucherEmbed],
+    components: [buildClaimRowOnly()],
+  }
 }
 
 export default {
   isExpired,
   endAtMs,
   buildGiveawayEmbed,
-  buildSpinRow: buildMainRow,
+  buildSpinRow: buildMainRow, // keep compatibility with sender
   weightedPick,
   buildResultPayload,
 }
