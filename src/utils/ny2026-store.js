@@ -1,8 +1,10 @@
-import fs from "fs"
-import fsp from "fs/promises"
-import path from "path"
-import crypto from "crypto"
-import config from "../../ny2026-config.js"
+"use strict"
+
+const fs = require("fs")
+const fsp = require("fs/promises")
+const path = require("path")
+const crypto = require("crypto")
+const { voucherPrefix } = require("../ny2026-config")
 
 const DATA_DIR = path.join(process.cwd(), "data")
 const DATA_FILE = path.join(DATA_DIR, "ny2026.json")
@@ -10,14 +12,16 @@ const DATA_FILE = path.join(DATA_DIR, "ny2026.json")
 let writeQueue = Promise.resolve()
 
 function defaultState() {
-  return { meta: {}, users: {}, vouchers: {} }
+  return {
+    meta: {},
+    users: {},
+    vouchers: {},
+  }
 }
 
 async function ensurePaths() {
   if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true })
-  if (!fs.existsSync(DATA_FILE)) {
-    await fsp.writeFile(DATA_FILE, JSON.stringify(defaultState(), null, 2), "utf8")
-  }
+  if (!fs.existsSync(DATA_FILE)) await fsp.writeFile(DATA_FILE, JSON.stringify(defaultState(), null, 2), "utf8")
 }
 
 async function load() {
@@ -42,49 +46,39 @@ function withWriteLock(fn) {
   return writeQueue
 }
 
-const ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"
-
-function randomCode(len = 8) {
-  const bytes = crypto.randomBytes(len)
-  let out = ""
-  for (let i = 0; i < len; i++) out += ALPHABET[bytes[i] % ALPHABET.length]
-  return out
+function pad6(n) {
+  return String(n).padStart(6, "0")
 }
 
 function normalizeVoucherId(input) {
   if (!input) return ""
   const s = String(input).trim().toUpperCase()
-  if (s.startsWith(`${config.voucherPrefix}-`)) return s
-  if (/^[A-Z2-9]{6,14}$/.test(s)) return `${config.voucherPrefix}-${s}`
-  if (/^\d{4,10}$/.test(s)) return `${config.voucherPrefix}-${s}`
+  if (/^\d{4,10}$/.test(s)) return `${voucherPrefix}-${s}`
   return s
 }
 
-function ensureUser(state, userId) {
-  if (!state.users[userId]) {
-    state.users[userId] = { spinsUsed: 0, lastSpinAt: null }
-  } else {
-    if (typeof state.users[userId].spinsUsed !== "number") state.users[userId].spinsUsed = 0
-    if (!("lastSpinAt" in state.users[userId])) state.users[userId].lastSpinAt = null
-  }
-  return state.users[userId]
+function randomNumericCode6() {
+  const n = crypto.randomInt(0, 1_000_000)
+  return pad6(n)
 }
 
 async function getUser(userId) {
   const state = await load()
-  const u = ensureUser(state, userId)
-  await save(state)
-  return u
+  if (!state.users[userId]) {
+    state.users[userId] = { spinsUsed: 0, lastSpinAt: null }
+    await save(state)
+  }
+  return state.users[userId]
 }
 
 async function addSpin(userId) {
   return withWriteLock(async () => {
     const state = await load()
-    const u = ensureUser(state, userId)
-    u.spinsUsed += 1
-    u.lastSpinAt = new Date().toISOString()
+    if (!state.users[userId]) state.users[userId] = { spinsUsed: 0, lastSpinAt: null }
+    state.users[userId].spinsUsed += 1
+    state.users[userId].lastSpinAt = new Date().toISOString()
     await save(state)
-    return u
+    return state.users[userId]
   })
 }
 
@@ -93,14 +87,16 @@ async function issueVoucher({ userId, prizeKey, prizeLabel, guildId }) {
     const state = await load()
 
     let id = ""
-    for (let i = 0; i < 12; i++) {
-      const candidate = `${config.voucherPrefix}-${randomCode(8)}`
+    for (let i = 0; i < 10; i++) {
+      const code = randomNumericCode6()
+      const candidate = `${voucherPrefix}-${code}`
       if (!state.vouchers[candidate]) {
         id = candidate
         break
       }
     }
-    if (!id) id = `${config.voucherPrefix}-${randomCode(10)}`
+
+    if (!id) id = `${voucherPrefix}-${randomNumericCode6()}`
 
     state.vouchers[id] = {
       id,
@@ -131,7 +127,7 @@ async function setMeta(metaPatch) {
   })
 }
 
-export default {
+module.exports = {
   normalizeVoucherId,
   getUser,
   addSpin,
