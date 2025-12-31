@@ -11,16 +11,33 @@ const FILE = process.env.BOT_STORE_FILE
 
 let writeQueue = Promise.resolve()
 
-function defaultConfig() {
-  return {
+// ✅ Defaults for the whole bot (tickets/anti-raid/etc)
+export function withDefaults(input) {
+  const base = {
     tickets: {},
+    antiRaid: {
+      enabled: false,
+      logChannelId: "",
+      action: "timeout", // "timeout" | "kick" | "ban"
+      timeoutSeconds: 600,
+      minAccountAgeDays: 7,
+      minServerJoinAgeMinutes: 5,
+    },
+  }
+
+  const obj = input && typeof input === "object" ? input : {}
+  return {
+    ...base,
+    ...obj,
+    tickets: { ...(base.tickets || {}), ...(obj.tickets || {}) },
+    antiRaid: { ...(base.antiRaid || {}), ...(obj.antiRaid || {}) },
   }
 }
 
 async function ensurePaths() {
   if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true })
   if (!fs.existsSync(FILE)) {
-    await fsp.writeFile(FILE, JSON.stringify(defaultConfig(), null, 2), "utf8")
+    await fsp.writeFile(FILE, JSON.stringify(withDefaults({}), null, 2), "utf8")
   }
 }
 
@@ -29,16 +46,16 @@ async function load() {
   try {
     const raw = await fsp.readFile(FILE, "utf8")
     const json = JSON.parse(raw)
-    return json && typeof json === "object" ? json : defaultConfig()
+    return withDefaults(json)
   } catch {
-    return defaultConfig()
+    return withDefaults({})
   }
 }
 
 async function save(state) {
   await ensurePaths()
   const tmp = FILE + ".tmp"
-  await fsp.writeFile(tmp, JSON.stringify(state, null, 2), "utf8")
+  await fsp.writeFile(tmp, JSON.stringify(withDefaults(state), null, 2), "utf8")
   await fsp.rename(tmp, FILE)
 }
 
@@ -47,39 +64,33 @@ function withWriteLock(fn) {
   return writeQueue
 }
 
-/**
- * ✅ What tickets.js expects:
- * readConfig() -> returns whole config object
- * writeConfig(nextConfig) -> saves whole object
- */
+// ✅ what tickets.js / anti-raid config command imports
 export async function readConfig() {
   return await load()
 }
 
 export async function writeConfig(next) {
   return withWriteLock(async () => {
-    const state = next && typeof next === "object" ? next : defaultConfig()
+    const state = withDefaults(next)
     await save(state)
     return state
   })
 }
 
-/**
- * Extra helpers (won’t hurt anything, useful for other modules)
- */
+// (optional helper, safe)
 export async function updateConfig(mutator) {
   return withWriteLock(async () => {
     const state = await load()
     const next = (await mutator(state)) ?? state
-    await save(next)
-    return next
+    const merged = withDefaults(next)
+    await save(merged)
+    return merged
   })
 }
 
-const store = {
+export default {
   readConfig,
   writeConfig,
+  withDefaults,
   updateConfig,
 }
-
-export default store
