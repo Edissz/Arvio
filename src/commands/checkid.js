@@ -1,7 +1,7 @@
 import { SlashCommandBuilder, PermissionFlagsBits } from "discord.js"
 import store from "../utils/ny2026-store.js"
 import { Embed } from "../utils/djs-compat.js"
-import config from "../ny2026-config.js"
+import config from "../../ny2026-config.js"
 
 export default {
   data: new SlashCommandBuilder()

@@ -15,7 +15,9 @@ function defaultState() {
 
 async function ensurePaths() {
   if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true })
-  if (!fs.existsSync(DATA_FILE)) await fsp.writeFile(DATA_FILE, JSON.stringify(defaultState(), null, 2), "utf8")
+  if (!fs.existsSync(DATA_FILE)) {
+    await fsp.writeFile(DATA_FILE, JSON.stringify(defaultState(), null, 2), "utf8")
+  }
 }
 
 async function load() {
@@ -52,8 +54,7 @@ function normalizeVoucherId(input) {
 }
 
 function randomNumericCode6() {
-  const n = crypto.randomInt(0, 1_000_000)
-  return pad6(n)
+  return pad6(crypto.randomInt(0, 1_000_000))
 }
 
 async function getUser(userId) {

@@ -1,5 +1,5 @@
 import { SlashCommandBuilder, PermissionFlagsBits } from "discord.js"
-import config from "../ny2026-config.js"
+import config from "../../ny2026-config.js"
 import ny from "../features/ny2026.js"
 import store from "../utils/ny2026-store.js"
 
@@ -22,7 +22,7 @@ export default {
 
     const channel = await interaction.client.channels.fetch(config.giveawayChannelId).catch(() => null)
     if (!channel?.send) {
-      return interaction.editReply("❌ I couldn’t access the giveaway channel. Check the channel ID + perms.")
+      return interaction.editReply("❌ I couldn’t access the giveaway channel. Check channel ID + perms.")
     }
 
     const sent = await channel
@@ -30,7 +30,7 @@ export default {
       .catch(() => null)
 
     if (!sent) {
-      return interaction.editReply("❌ Failed to send the embed. Check my perms (Send Messages + Embed Links).")
+      return interaction.editReply("❌ Failed to send embed. Check perms: Send Messages + Embed Links.")
     }
 
     await store.setMeta({ giveawayMessageId: sent.id, giveawayChannelId: config.giveawayChannelId })

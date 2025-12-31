@@ -34,7 +34,8 @@ function buildGiveawayEmbed() {
       { name: "🎯 Odds", value: oddsLines(), inline: false },
       {
         name: "🧠 Rules",
-        value: "• Spins are tracked per user\n• Results are private (only you can see them)\n• Don’t use alts — voucher IDs are logged",
+        value:
+          "• Spins are tracked per user\n• Results are private (only you can see them)\n• Voucher IDs are stored + admin-verifiable",
         inline: false,
       }
     )
@@ -62,6 +63,15 @@ function weightedPick() {
   return { key: fallbackKey, reward: fallbackReward }
 }
 
+async function canManageRoles(guild) {
+  try {
+    const me = guild.members.me ?? (await guild.members.fetchMe().catch(() => null))
+    return Boolean(me?.permissions?.has?.("ManageRoles"))
+  } catch {
+    return false
+  }
+}
+
 async function ensureParticipationRole(guild) {
   const r = config.rewards.participation
   if (!r) return null
@@ -74,9 +84,12 @@ async function ensureParticipationRole(guild) {
   const found = guild.roles.cache.find((x) => x.name === r.roleNameFallback) || null
   if (found) return found
 
-  if (!guild.members.me?.permissions?.has?.("ManageRoles")) return null
+  if (!(await canManageRoles(guild))) return null
 
-  const created = await guild.roles.create({ name: r.roleNameFallback, reason: "NY2026 participation role" }).catch(() => null)
+  const created = await guild.roles
+    .create({ name: r.roleNameFallback, reason: "NY2026 participation role" })
+    .catch(() => null)
+
   return created || null
 }
 
@@ -96,7 +109,7 @@ async function buildResultPayload({ interaction, picked, spinsLeft }) {
     } else {
       base.addFields({
         name: "⚠️ Role",
-        value: "Couldn’t auto-assign (missing role ID / Manage Roles). Admins can assign it manually.",
+        value: "Couldn’t auto-assign (missing role ID / Manage Roles / role hierarchy). Admins can assign manually.",
         inline: false,
       })
     }
@@ -117,10 +130,10 @@ async function buildResultPayload({ interaction, picked, spinsLeft }) {
       [
         `**Voucher ID:** \`${voucher.id}\``,
         "",
-        "Save this ID. An admin can verify it with:",
-        `\`!checkid ${voucher.id}\``,
+        "Save this ID. Admins can verify it with:",
+        `\`/checkid id:${voucher.id}\``,
         "",
-        "For redeem help, open a support ticket and paste the ID.",
+        "If you need redeem help, open a support ticket and paste the ID.",
       ].join("\n")
     )
     .setTimestamp()
