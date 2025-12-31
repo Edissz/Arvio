@@ -26,7 +26,7 @@ function formatOdds() {
   const lines = entries
     .filter(([, r]) => r?.label && typeof r.weight === "number")
     .sort((a, b) => (b[1].weight || 0) - (a[1].weight || 0))
-    .map(([, r]) => `• **${r.label}** — **${r.weight}%**`)
+    .map(([, r]) => `• **${r.label}** - **${r.weight}%**`)
   return lines.length ? lines.join("\n") : "Odds unavailable."
 }
 
@@ -39,7 +39,7 @@ function buildGiveawayEmbed() {
     .setDescription(
       [
         "We’re celebrating **2,000 Discord members** + **20,000 GitHub stars**.",
-        `Click **Spin Now** — you get **${config.spinsPerUser} spin**.`,
+        `Click **Spin Now** - you get **${config.spinsPerUser} spin**.`,
         "",
         `Available until <t:${endUnix}:f> (before 2026).`,
       ].join("\n")
