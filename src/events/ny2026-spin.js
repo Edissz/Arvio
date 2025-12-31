@@ -10,7 +10,7 @@ export default {
   name: "interactionCreate",
   once: false,
 
-  async execute(interaction) {
+  async execute(client, interaction) {
     if (!interaction?.isButton?.()) return
     if (interaction.customId !== config.buttonCustomId) return
     if (!interaction.inGuild?.()) return
@@ -21,7 +21,7 @@ export default {
 
     const userId = interaction.user.id
     if (active.has(userId)) {
-      return interaction.reply({ content: "⚠️ You’re already rolling. Chill 😭", ephemeral: true }).catch(() => {})
+      return interaction.reply({ content: "⚠️ You’re already rolling.", ephemeral: true }).catch(() => {})
     }
 
     active.add(userId)

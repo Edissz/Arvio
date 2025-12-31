@@ -6,7 +6,7 @@ export default {
   async execute(client) {
     console.log(`✅ Logged in as ${client.user.tag}`);
     client.user.setPresence({
-      activities: [{ name: 'Arvio.app', type: ActivityType.Playing }],
+      activities: [{ name: 'Happy New Year', type: ActivityType.Playing }],
       status: 'online'
     });
   }
