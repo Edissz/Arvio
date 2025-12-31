@@ -5,11 +5,9 @@ import { Embed, ActionRow, Button, buttonPrimary, buttonLink } from "../utils/dj
 function endAtMs() {
   return Date.parse(config.endAtIso)
 }
-
 function endAtUnix() {
   return Math.floor(endAtMs() / 1000)
 }
-
 function isExpired() {
   return Date.now() >= endAtMs()
 }
@@ -20,18 +18,27 @@ function chancesLines() {
     .join("\n")
 }
 
+// ✅ ANSI winner text (dynamic)
+function ansiWon(prizeLabel) {
+  const ESC = "\u001b"
+  return [
+    "```ansi",
+    `${ESC}[2;36m${ESC}[2;35mYou have won ${prizeLabel}!${ESC}[0m${ESC}[2;36m${ESC}[0m`,
+    "```",
+  ].join("\n")
+}
+
 function buildGiveawayEmbed() {
   const endUnix = endAtUnix()
-
   return new Embed()
     .setColor(config.brandColor) // white
     .setTitle("MagicUI New Year Spin")
     .setDescription(
       [
         "We’re celebrating **2,000 Discord members** + **20,000 GitHub stars**.",
-        `Tap **Spin Now** to roll your reward. You get **${config.spinsPerUser} spin**.`,
+        `Click **Spin Now** — you get **${config.spinsPerUser} spin**.`,
         "",
-        `Ends **before 2026** — <t:${endUnix}:f>`,
+        `Ends before 2026 — <t:${endUnix}:f>`,
       ].join("\n")
     )
     .addFields({ name: "Chances", value: chancesLines(), inline: false })
@@ -95,33 +102,51 @@ async function ensureParticipationRole(guild) {
   return created || null
 }
 
+async function safeDM(user, payload) {
+  try {
+    await user.send(payload)
+    return true
+  } catch {
+    return false
+  }
+}
+
 async function buildResultPayload({ interaction, picked, spinsLeft }) {
   const endUnix = endAtUnix()
+  const wonText = ansiWon(picked.reward.label)
 
   const resultEmbed = new Embed()
     .setColor(config.brandColor)
     .setTitle("Spin Result")
-    .setDescription(`You won: **${picked.reward.label}**`)
+    .setDescription(`Reward: **${picked.reward.label}**`)
     .addFields({ name: "Spins left", value: String(spinsLeft), inline: true })
+    .setImage(config.bannerImageUrl)
     .setTimestamp()
 
-  // Role reward
+  // ROLE reward
   if (picked.reward.type === "role") {
     const role = await ensureParticipationRole(interaction.guild)
     if (role) {
       await interaction.member.roles.add(role).catch(() => {})
-      resultEmbed.addFields({ name: "Status", value: `Role added: <@&${role.id}>`, inline: false })
-    } else {
-      resultEmbed.addFields({
-        name: "Status",
-        value: "Role could not be auto-assigned. Staff can assign it manually if needed.",
-        inline: false,
-      })
     }
-    return { embeds: [resultEmbed], components: [buildClaimRowOnly()] }
+
+    await safeDM(interaction.user, {
+      content: wonText,
+      embeds: [
+        new Embed()
+          .setColor(config.brandColor)
+          .setTitle("MagicUI New Year Spin")
+          .setDescription(`Your reward: **${picked.reward.label}**\nValid until <t:${endUnix}:f>.`)
+          .setImage(config.bannerImageUrl)
+          .setTimestamp(),
+      ],
+      components: [buildClaimRowOnly()],
+    })
+
+    return { content: wonText, embeds: [resultEmbed], components: [buildClaimRowOnly()] }
   }
 
-  // Voucher reward
+  // VOUCHER reward
   const voucher = await store.issueVoucher({
     userId: interaction.user.id,
     prizeKey: picked.key,
@@ -135,14 +160,20 @@ async function buildResultPayload({ interaction, picked, spinsLeft }) {
     .setDescription(
       [
         `**Voucher ID:** \`${voucher.id}\``,
-        "",
         `Valid until <t:${endUnix}:f> (before 2026).`,
-        "To claim: open Support and paste your voucher ID.",
+        "Claim it via Support (button below).",
       ].join("\n")
     )
+    .setImage(config.bannerImageUrl)
     .setTimestamp()
 
-  return { embeds: [resultEmbed, voucherEmbed], components: [buildClaimRowOnly()] }
+  await safeDM(interaction.user, {
+    content: wonText,
+    embeds: [voucherEmbed],
+    components: [buildClaimRowOnly()],
+  })
+
+  return { content: wonText, embeds: [resultEmbed, voucherEmbed], components: [buildClaimRowOnly()] }
 }
 
 export default {
