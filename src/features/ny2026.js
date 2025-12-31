@@ -1,6 +1,6 @@
-const config = require("../ny2026-config")
-const store = require("../utils/ny2026-store")
-const { Embed, ActionRow, Button, buttonPrimary } = require("../utils/djs-compat")
+import config from "../../ny2026-config.js"
+import store from "../utils/ny2026-store.js"
+import { Embed, ActionRow, Button, buttonPrimary } from "../utils/djs-compat.js"
 
 function endAtMs() {
   return Date.parse(config.endAtIso)
@@ -11,8 +11,7 @@ function isExpired() {
 }
 
 function oddsLines() {
-  const entries = Object.entries(config.rewards)
-  return entries
+  return Object.entries(config.rewards)
     .map(([, r]) => `• **${r.label}** — **${r.weight}%**`)
     .join("\n")
 }
@@ -35,8 +34,7 @@ function buildGiveawayEmbed() {
       { name: "🎯 Odds", value: oddsLines(), inline: false },
       {
         name: "🧠 Rules",
-        value:
-          "• Spins are tracked per user\n• Results are private (only you can see them)\n• Don’t use alts — we log voucher IDs",
+        value: "• Spins are tracked per user\n• Results are private (only you can see them)\n• Don’t use alts — voucher IDs are logged",
         inline: false,
       }
     )
@@ -46,13 +44,9 @@ function buildGiveawayEmbed() {
 }
 
 function buildSpinRow() {
-  const row = new ActionRow().addComponents(
-    new Button()
-      .setCustomId(config.buttonCustomId)
-      .setStyle(buttonPrimary)
-      .setLabel("Spin Now 🎰")
+  return new ActionRow().addComponents(
+    new Button().setCustomId(config.buttonCustomId).setStyle(buttonPrimary).setLabel("Spin Now 🎰")
   )
-  return row
 }
 
 function weightedPick() {
@@ -82,13 +76,7 @@ async function ensureParticipationRole(guild) {
 
   if (!guild.members.me?.permissions?.has?.("ManageRoles")) return null
 
-  const created = await guild.roles
-    .create({
-      name: r.roleNameFallback,
-      reason: "NY2026 participation role",
-    })
-    .catch(() => null)
-
+  const created = await guild.roles.create({ name: r.roleNameFallback, reason: "NY2026 participation role" }).catch(() => null)
   return created || null
 }
 
@@ -108,8 +96,7 @@ async function buildResultPayload({ interaction, picked, spinsLeft }) {
     } else {
       base.addFields({
         name: "⚠️ Role",
-        value:
-          "Couldn’t auto-assign the role (missing role ID / Manage Roles permission). Admins can assign it manually.",
+        value: "Couldn’t auto-assign (missing role ID / Manage Roles). Admins can assign it manually.",
         inline: false,
       })
     }
@@ -133,7 +120,7 @@ async function buildResultPayload({ interaction, picked, spinsLeft }) {
         "Save this ID. An admin can verify it with:",
         `\`!checkid ${voucher.id}\``,
         "",
-        "If you need help redeeming, open a ticket/support channel and paste the ID.",
+        "For redeem help, open a support ticket and paste the ID.",
       ].join("\n")
     )
     .setTimestamp()
@@ -141,7 +128,7 @@ async function buildResultPayload({ interaction, picked, spinsLeft }) {
   return { embeds: [base, voucherEmbed] }
 }
 
-module.exports = {
+export default {
   isExpired,
   endAtMs,
   buildGiveawayEmbed,

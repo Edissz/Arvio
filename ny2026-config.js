@@ -1,19 +1,15 @@
-module.exports = {
+export default {
   giveawayChannelId: "1455965081987711204",
-
-  // Ends exactly when 2026 starts (Kosovo time +01:00)
   endAtIso: "2026-01-01T00:00:00+01:00",
-
   spinsPerUser: 2,
 
-  // Odds must total 100
   rewards: {
     participation: {
       label: "🎆 NY 2026 Participant Role",
       weight: 50,
       type: "role",
-      roleId: process.env.NY2026_PARTICIPATION_ROLE_ID || "", // optional
-      roleNameFallback: "🎆 NY 2026 Participant", // used if roleId not set
+      roleId: process.env.NY2026_PARTICIPATION_ROLE_ID || "",
+      roleNameFallback: "🎆 NY 2026 Participant",
     },
     discount30: {
       label: "🏷️ 30% Discount Voucher",
@@ -34,6 +30,5 @@ module.exports = {
 
   buttonCustomId: "ny2026:spin",
   brandColor: 0x1b68cf,
-
   voucherPrefix: "NY26",
 }

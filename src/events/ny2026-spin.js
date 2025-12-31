@@ -1,13 +1,11 @@
-const ny = require("../features/ny2026")
-const config = require("../ny2026-config")
-const store = require("../utils/ny2026-store")
-const { Embed } = require("../utils/djs-compat")
+import ny from "../features/ny2026.js"
+import config from "../../ny2026-config.js"
+import store from "../utils/ny2026-store.js"
+import { Embed } from "../utils/djs-compat.js"
 
 const active = new Set()
 
-function sleep(ms) {
-  return new Promise((r) => setTimeout(r, ms))
-}
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
 async function execute(...params) {
   const interaction = params.find((p) => p && typeof p.isButton === "function") || params[0]
@@ -16,26 +14,22 @@ async function execute(...params) {
   if (!interaction.inGuild?.()) return
 
   if (ny.isExpired()) {
-    await interaction.reply({ content: "⏳ This event ended (2026 already started).", ephemeral: true }).catch(() => {})
-    return
+    return interaction.reply({ content: "⏳ This event ended (2026 already started).", ephemeral: true }).catch(() => {})
   }
 
   const userId = interaction.user.id
   if (active.has(userId)) {
-    await interaction.reply({ content: "⚠️ You’re already rolling. Chill 😭", ephemeral: true }).catch(() => {})
-    return
+    return interaction.reply({ content: "⚠️ You’re already rolling. Chill 😭", ephemeral: true }).catch(() => {})
   }
 
   active.add(userId)
-
   try {
     const user = await store.getUser(userId)
     const used = user.spinsUsed || 0
     const leftBefore = config.spinsPerUser - used
 
     if (leftBefore <= 0) {
-      await interaction.reply({ content: "🎟️ You used all your spins.", ephemeral: true }).catch(() => {})
-      return
+      return interaction.reply({ content: "🎟️ You used all your spins.", ephemeral: true }).catch(() => {})
     }
 
     await store.addSpin(userId)
@@ -50,8 +44,7 @@ async function execute(...params) {
 
     await interaction.reply({ embeds: [rollingEmbed], ephemeral: true }).catch(() => {})
 
-    const steps = [18, 41, 67, 89, 100]
-    for (const pct of steps) {
+    for (const pct of [18, 41, 67, 89, 100]) {
       await sleep(450)
       rollingEmbed.setDescription(`Progress: **${pct}%**`)
       await interaction.editReply({ embeds: [rollingEmbed] }).catch(() => {})
@@ -59,14 +52,13 @@ async function execute(...params) {
 
     const picked = ny.weightedPick()
     const payload = await ny.buildResultPayload({ interaction, picked, spinsLeft: leftAfter })
-
     await interaction.editReply(payload).catch(() => {})
   } finally {
     active.delete(userId)
   }
 }
 
-module.exports = {
+export default {
   name: "interactionCreate",
   once: false,
   execute,

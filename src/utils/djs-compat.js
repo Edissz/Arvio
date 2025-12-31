@@ -1,4 +1,4 @@
-const djs = require("discord.js")
+import * as djs from "discord.js"
 
 const Embed = djs.EmbedBuilder || djs.MessageEmbed
 const ActionRow = djs.ActionRowBuilder || djs.MessageActionRow
@@ -23,12 +23,4 @@ function nowMs() {
   return Date.now()
 }
 
-module.exports = {
-  djs,
-  Embed,
-  ActionRow,
-  Button,
-  buttonPrimary,
-  isAdmin,
-  nowMs,
-}
+export { djs, Embed, ActionRow, Button, buttonPrimary, isAdmin, nowMs }

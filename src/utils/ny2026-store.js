@@ -1,10 +1,8 @@
-"use strict"
-
-const fs = require("fs")
-const fsp = require("fs/promises")
-const path = require("path")
-const crypto = require("crypto")
-const { voucherPrefix } = require("../ny2026-config")
+import fs from "fs"
+import fsp from "fs/promises"
+import path from "path"
+import crypto from "crypto"
+import config from "../../ny2026-config.js"
 
 const DATA_DIR = path.join(process.cwd(), "data")
 const DATA_FILE = path.join(DATA_DIR, "ny2026.json")
@@ -12,11 +10,7 @@ const DATA_FILE = path.join(DATA_DIR, "ny2026.json")
 let writeQueue = Promise.resolve()
 
 function defaultState() {
-  return {
-    meta: {},
-    users: {},
-    vouchers: {},
-  }
+  return { meta: {}, users: {}, vouchers: {} }
 }
 
 async function ensurePaths() {
@@ -53,7 +47,7 @@ function pad6(n) {
 function normalizeVoucherId(input) {
   if (!input) return ""
   const s = String(input).trim().toUpperCase()
-  if (/^\d{4,10}$/.test(s)) return `${voucherPrefix}-${s}`
+  if (/^\d{4,10}$/.test(s)) return `${config.voucherPrefix}-${s}`
   return s
 }
 
@@ -89,14 +83,13 @@ async function issueVoucher({ userId, prizeKey, prizeLabel, guildId }) {
     let id = ""
     for (let i = 0; i < 10; i++) {
       const code = randomNumericCode6()
-      const candidate = `${voucherPrefix}-${code}`
+      const candidate = `${config.voucherPrefix}-${code}`
       if (!state.vouchers[candidate]) {
         id = candidate
         break
       }
     }
-
-    if (!id) id = `${voucherPrefix}-${randomNumericCode6()}`
+    if (!id) id = `${config.voucherPrefix}-${randomNumericCode6()}`
 
     state.vouchers[id] = {
       id,
@@ -127,11 +120,4 @@ async function setMeta(metaPatch) {
   })
 }
 
-module.exports = {
-  normalizeVoucherId,
-  getUser,
-  addSpin,
-  issueVoucher,
-  findVoucher,
-  setMeta,
-}
+export default { normalizeVoucherId, getUser, addSpin, issueVoucher, findVoucher, setMeta }

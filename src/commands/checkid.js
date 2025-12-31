@@ -1,28 +1,19 @@
-const store = require("../utils/ny2026-store")
-const { Embed, isAdmin } = require("../utils/djs-compat")
-const config = require("../ny2026-config")
+import store from "../utils/ny2026-store.js"
+import { Embed, isAdmin } from "../utils/djs-compat.js"
+import config from "../../ny2026-config.js"
 
 async function handler(...params) {
   const message = params.find((p) => p && p.content && p.author && p.channel) || params[1]
   const args = params.find((p) => Array.isArray(p)) || []
 
   if (!message?.guild) return
-  if (!isAdmin(message.member)) {
-    await message.reply("❌ Only admins can use this command.")
-    return
-  }
+  if (!isAdmin(message.member)) return message.reply("❌ Only admins can use this command.")
 
   const raw = args?.[0]
-  if (!raw) {
-    await message.reply("Usage: `!checkid NY26-000000`")
-    return
-  }
+  if (!raw) return message.reply("Usage: `!checkid NY26-000000`")
 
   const voucher = await store.findVoucher(raw)
-  if (!voucher) {
-    await message.reply("❌ No win found for that ID.")
-    return
-  }
+  if (!voucher) return message.reply("❌ No win found for that ID.")
 
   const embed = new Embed()
     .setColor(config.brandColor)
@@ -38,10 +29,10 @@ async function handler(...params) {
     )
     .setTimestamp()
 
-  await message.reply({ embeds: [embed] })
+  return message.reply({ embeds: [embed] })
 }
 
-module.exports = {
+export default {
   name: "checkid",
   aliases: ["checkid"],
   run: handler,
