@@ -42,38 +42,49 @@ function withWriteLock(fn) {
   return writeQueue
 }
 
-function pad6(n) {
-  return String(n).padStart(6, "0")
+const ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"
+
+function randomCode(len = 8) {
+  const bytes = crypto.randomBytes(len)
+  let out = ""
+  for (let i = 0; i < len; i++) out += ALPHABET[bytes[i] % ALPHABET.length]
+  return out
 }
 
 function normalizeVoucherId(input) {
   if (!input) return ""
   const s = String(input).trim().toUpperCase()
+  if (s.startsWith(`${config.voucherPrefix}-`)) return s
+  if (/^[A-Z2-9]{6,14}$/.test(s)) return `${config.voucherPrefix}-${s}`
   if (/^\d{4,10}$/.test(s)) return `${config.voucherPrefix}-${s}`
   return s
 }
 
-function randomNumericCode6() {
-  return pad6(crypto.randomInt(0, 1_000_000))
+function ensureUser(state, userId) {
+  if (!state.users[userId]) {
+    state.users[userId] = { spinsUsed: 0, lastSpinAt: null }
+  } else {
+    if (typeof state.users[userId].spinsUsed !== "number") state.users[userId].spinsUsed = 0
+    if (!("lastSpinAt" in state.users[userId])) state.users[userId].lastSpinAt = null
+  }
+  return state.users[userId]
 }
 
 async function getUser(userId) {
   const state = await load()
-  if (!state.users[userId]) {
-    state.users[userId] = { spinsUsed: 0, lastSpinAt: null }
-    await save(state)
-  }
-  return state.users[userId]
+  const u = ensureUser(state, userId)
+  await save(state)
+  return u
 }
 
 async function addSpin(userId) {
   return withWriteLock(async () => {
     const state = await load()
-    if (!state.users[userId]) state.users[userId] = { spinsUsed: 0, lastSpinAt: null }
-    state.users[userId].spinsUsed += 1
-    state.users[userId].lastSpinAt = new Date().toISOString()
+    const u = ensureUser(state, userId)
+    u.spinsUsed += 1
+    u.lastSpinAt = new Date().toISOString()
     await save(state)
-    return state.users[userId]
+    return u
   })
 }
 
@@ -82,15 +93,14 @@ async function issueVoucher({ userId, prizeKey, prizeLabel, guildId }) {
     const state = await load()
 
     let id = ""
-    for (let i = 0; i < 10; i++) {
-      const code = randomNumericCode6()
-      const candidate = `${config.voucherPrefix}-${code}`
+    for (let i = 0; i < 12; i++) {
+      const candidate = `${config.voucherPrefix}-${randomCode(8)}`
       if (!state.vouchers[candidate]) {
         id = candidate
         break
       }
     }
-    if (!id) id = `${config.voucherPrefix}-${randomNumericCode6()}`
+    if (!id) id = `${config.voucherPrefix}-${randomCode(10)}`
 
     state.vouchers[id] = {
       id,
@@ -121,4 +131,11 @@ async function setMeta(metaPatch) {
   })
 }
 
-export default { normalizeVoucherId, getUser, addSpin, issueVoucher, findVoucher, setMeta }
+export default {
+  normalizeVoucherId,
+  getUser,
+  addSpin,
+  issueVoucher,
+  findVoucher,
+  setMeta,
+}
