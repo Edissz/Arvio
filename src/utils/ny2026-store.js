@@ -42,19 +42,29 @@ function withWriteLock(fn) {
   return writeQueue
 }
 
-function pad6(n) {
-  return String(n).padStart(6, "0")
+const ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789" // no I/O/0/1
+
+function randomCode(len = 8) {
+  const bytes = crypto.randomBytes(len)
+  let out = ""
+  for (let i = 0; i < len; i++) out += ALPHABET[bytes[i] % ALPHABET.length]
+  return out
 }
 
 function normalizeVoucherId(input) {
   if (!input) return ""
   const s = String(input).trim().toUpperCase()
-  if (/^\d{4,10}$/.test(s)) return `${config.voucherPrefix}-${s}`
-  return s
-}
 
-function randomNumericCode6() {
-  return pad6(crypto.randomInt(0, 1_000_000))
+  // already prefixed
+  if (s.startsWith(`${config.voucherPrefix}-`)) return s
+
+  // allow raw codes like K7Q9Z4PM
+  if (/^[A-Z2-9]{6,14}$/.test(s)) return `${config.voucherPrefix}-${s}`
+
+  // allow numeric legacy
+  if (/^\d{4,10}$/.test(s)) return `${config.voucherPrefix}-${s}`
+
+  return s
 }
 
 async function getUser(userId) {
@@ -82,15 +92,14 @@ async function issueVoucher({ userId, prizeKey, prizeLabel, guildId }) {
     const state = await load()
 
     let id = ""
-    for (let i = 0; i < 10; i++) {
-      const code = randomNumericCode6()
-      const candidate = `${config.voucherPrefix}-${code}`
+    for (let i = 0; i < 12; i++) {
+      const candidate = `${config.voucherPrefix}-${randomCode(8)}`
       if (!state.vouchers[candidate]) {
         id = candidate
         break
       }
     }
-    if (!id) id = `${config.voucherPrefix}-${randomNumericCode6()}`
+    if (!id) id = `${config.voucherPrefix}-${randomCode(10)}`
 
     state.vouchers[id] = {
       id,
